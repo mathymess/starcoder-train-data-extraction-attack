@@ -24,11 +24,12 @@ Let's implement the data extraction attack on [bigcode/starcoderbase-3b](https:/
 pip install -r requirements.txt
 ```
 
-4. Let the model generate a lot of text, calculate some perplexity-based metrics by running the
-   Python script:
+4. Let the model generate a lot of text, calculate some perplexity-based
+    metrics by running the script (assumes Unix-like OS, check the file and adopt for your OS):
 ```
-TODO
+./generate_code_chunks.sh
 ```
+This saves the code chunks and the respective perprexities to a CSV file.
 
 5. Explore the saved results manually in the Jupyter notebook (see `TODO`).
     - To verify that the extracted code chunk was indeed present in the training data, we can search for it on GitHub using their API, since the original dataset is too large to search locally.
