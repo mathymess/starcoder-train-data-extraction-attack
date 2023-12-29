@@ -152,10 +152,10 @@ def main(args):
 
     # Load models
     print("Loading models...")
-    TOKENIZER_GPT2 = load_tokenizer("gpt2")
-    MODEL_GPT2 = load_model("gpt2", device)
+    TOKENIZER_GPT2 = load_tokenizer("bigcode/starcoderbase-3b")
+    MODEL_GPT2 = load_model("bigcode/starcoderbase-1b", device)
     # MODEL_GPT2_MEDIUM = load_model_for_causal_lm("gpt2-medium", device)
-    MODEL_GPT2_XL = load_model("gpt2-xl", device)
+    MODEL_GPT2_XL = load_model("bigcode/starcoderbase-3b", device)
     print("GPT2 and GPT2-XL models loaded!")
 
     # number of tokens to generate (from paper)

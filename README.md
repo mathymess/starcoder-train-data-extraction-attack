@@ -31,7 +31,7 @@ TODO
 ```
 
 5. Explore the saved results manually in the Jupyter notebook (see `TODO`).
-    - To verify that the extracted code chunk was indeed present in the training data, we can search for it on GitHub using their API.
+    - To verify that the extracted code chunk was indeed present in the training data, we can search for it on GitHub using their API, since the original dataset is too large to search locally.
     - Obtain a GitHub API token, put it into the environment variable called `GITHUB_API_TOKEN`
 
 ## Code Adoption Disclaimer
