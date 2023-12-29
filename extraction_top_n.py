@@ -1,5 +1,5 @@
 import torch
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForCausalLM, set_seed
 
 from tqdm import tqdm
 import pandas as pd
@@ -59,6 +59,33 @@ def calculate_perplexity_sliding(input_sentence, model, tokenizer, device, windo
     return min_perplexity
 
 
+def append_results_on_batch(
+    all_scores, all_texts: list[str], batch: list[str], model3b, model1b, tokenizer, device
+):
+    for text in batch:
+        # Calculate perplexity of StarCoder-3b and 1b on each generated text
+        perplexity_3b = calculate_perplexity(text, model3b, tokenizer, device)
+        perplexity_1b = calculate_perplexity(text, model1b, tokenizer, device)
+
+        # Calculate perplexity of StarCoder-3b on each lower-cased text
+        perplexity_3b_lowercase = calculate_perplexity(text.lower(), model3b, tokenizer, device)
+
+        # Calculate zlib entropy of the generated code chunk
+        zlib_entropy = len(zlib.compress(bytes(text, "utf-8")))
+
+        # Calculate minimum perplexity of GPT2-XL across any sliding window of 50 tokens
+        perplexity_3b_slidingwindow = calculate_perplexity_sliding(
+            text.lower(), model3b, tokenizer, device
+        )
+
+        all_texts.append(text)
+        all_scores["perp_1b"].append(perplexity_3b)
+        all_scores["perp_3b"].append(perplexity_1b)
+        all_scores["zlib_entropy"].append(zlib_entropy)
+        all_scores["perp_3b_lowercase"].append(perplexity_3b_lowercase)
+        all_scores["sliding_window"].append(perplexity_3b_slidingwindow)
+
+
 def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -78,14 +105,11 @@ def main(args):
 
     generated_samples = []
     scores = defaultdict(list)
-
     with tqdm(total=new_tot) as pbar:
         for batch in range(num_batches):
             # Create empty prompts
             prompts = [tokenizer.eos_token] * args.batch_size
-            encoded_prompts = tokenizer(prompts, return_tensors="pt", padding=True).to(
-                device
-            )
+            encoded_prompts = tokenizer(prompts, return_tensors="pt", padding=True).to(device)
 
             # Batched sequence generation
             generated_sequences = model3b.generate(
@@ -96,34 +120,9 @@ def main(args):
                 top_k=k_in_top_k_sampling,
                 top_p=1.0,
             )
-
             generated_texts = tokenizer.batch_decode(generated_sequences, skip_special_tokens=True)
 
-            for text in generated_texts:
-                # Calculate perplexity of StarCoder-3b and 1b on each generated text
-                perplexity_3b = calculate_perplexity(text, model3b, tokenizer, device)
-                perplexity_1b = calculate_perplexity(text, model1b, tokenizer, device)
-
-                # Calculate perplexity of StarCoder-3b on each lower-cased text
-                perplexity_3b_lowercase = calculate_perplexity(
-                    text.lower(), model3b, tokenizer, device
-                )
-
-                # Calculate zlib entropy of the generated code chunk
-                zlib_entropy = len(zlib.compress(bytes(text, "utf-8")))
-
-                # Calculate minimum perplexity of GPT2-XL across any sliding window of 50 tokens
-                perplexity_3b_slidingwindow = calculate_perplexity_sliding(
-                    text.lower(), model3b, tokenizer, device
-                )
-
-                generated_samples.append(text)
-                scores["perp_1b"].append(perplexity_3b)
-                scores["perp_3b"].append(perplexity_1b)
-                scores["zlib_entropy"].append(zlib_entropy)
-                scores["perp_3b_lowercase"].append(perplexity_3b_lowercase)
-                scores["sliding_window"].append(perplexity_3b_slidingwindow)
-
+            append_results_on_batch(scores, generated_samples, generated_texts, model3b, model1b, tokenizer, device)
             pbar.update(args.batch_size)
 
     df = pd.DataFrame({"texts": generated_samples, **scores})
@@ -131,16 +130,23 @@ def main(args):
     df.to_csv(args.outfile)
 
 
-if __name__ == "__main__":
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--N", default=20, type=int, help="Number of samples to generate")
     parser.add_argument("--batch_size", default=20, type=int, help="Batch size")
+    parser.add_argument(
+        "--random_seed", default=42, type=int, help="RNG Seed to ensure reproducible generation"
+    )
     parser.add_argument(
         "--outfile",
         type=str,
         help="Path to file to which the CSV of pandas dataset with results will be written",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
+
+if __name__ == "__main__":
+    args = parse_args()
+    set_seed(args.random_seed)
     main(args)
