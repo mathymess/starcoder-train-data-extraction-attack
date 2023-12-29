@@ -1,8 +1,12 @@
 import requests
 import os
+import re
 
 
 def get_search_url(query: str) -> str:
+    query = query.strip()
+    query = re.sub("\s+", " ", query)  # Normalize whitespace characters
+    query = re.sub("\s+", " ", query)  # Remove duplicate spaces
     url = f'https://api.github.com/search/code?q="{query}"'
     return url
 
@@ -16,27 +20,28 @@ def get_headers_with_auth() -> dict[str, str]:
     return headers
 
 
-def search_github(code_chunk: str, raise_httperror: bool = True) -> dict:
+def search_github(code_chunk: str) -> dict:
     """
     Search all GitHub repositories for a code chunk using GitHub API.
     GitHub API Token is read from GITHUB_API_TOKEN environment variable.
     Raise ValueError if the environment variable is not set or is empty.
     The matching is exact (using "").
-    Optionally raise HTTPError when the request is not successful.
-    Return the response content in JSON format (Python dict).
+    Return the response object
     """
     url = get_search_url(code_chunk.strip())
     headers = get_headers_with_auth()
-
-    response = requests.request("GET", url, headers=headers)
-    if raise_httperror:
-        response.raise_for_status()
-
-    return response.json()
+    return requests.request("GET", url, headers=headers)
 
 
-def get_gh_occurence_count(code_chunk: str) -> int:
-    return search_github(code_chunk)["total_count"]
+def get_gh_occurence_count(code_chunk: str, raise_httperror: bool = True) -> int:
+    """
+    Raise HTTPError when the request is not successful.
+    Return the total occurence count of the code chunk on GitHub from the response JSON.
+    """
+    response = search_github(code_chunk)
+    response.raise_for_status()
+    response_json = response.json()
+    return response_json["total_count"]
 
 
 if __name__ == "__main__":
@@ -45,6 +50,10 @@ if __name__ == "__main__":
     """
     code = """
         text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
+
+		total_sequence = (
+			args.prompt + text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)):]
+        # Some comment that would get me zero occurences
     """.strip()
-    response_json = search_github(code)
-    print(f"total count: {response_json['total_count']}")
+    print(get_search_url(code))
+    print(f"total count: {search_github(code)}")

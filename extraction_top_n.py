@@ -38,8 +38,8 @@ def calculate_perplexity(input_sentence: str, model, tokenizer, device: str) -> 
     with the labels set as the same tokenized input (the shifting of the labels is done internally)
     https://huggingface.co/docs/transformers/tasks/language_modeling
     """
-    tokenized = tokenizer(input_sentence)
-    input_ids = torch.tensor(tokenized.input_ids).to(device)
+    input_ids = tokenizer(input_sentence).input_ids
+    input_ids = torch.tensor(input_ids).to(device)
     output = model(input_ids, labels=input_ids)
     return torch.exp(output.loss).cpu().item()
 
@@ -49,7 +49,8 @@ def calculate_perplexity_sliding(input_sentence, model, tokenizer, device, windo
     """
     Calculate min(exp(loss)) over a sliding window
     """
-    input_ids = tokenizer(input_sentence).input_ids.to(device)
+    input_ids = tokenizer(input_sentence).input_ids
+    input_ids = torch.tensor(input_ids).to(device)
     min_perplexity = torch.inf
     for start_idx in range(input_ids.shape[0] - window_size):
         input_window = input_ids[start_idx : start_idx + window_size]
@@ -82,14 +83,14 @@ def main(args):
         for batch in range(num_batches):
             # Create empty prompts
             prompts = [tokenizer.eos_token] * args.batch_size
-            input_ids, attention_mask = tokenizer(prompts, return_tensors="pt", padding=True).to(
+            encoded_prompts = tokenizer(prompts, return_tensors="pt", padding=True).to(
                 device
             )
 
             # Batched sequence generation
             generated_sequences = model3b.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
+                input_ids=encoded_prompts.input_ids,
+                attention_mask=encoded_prompts.attention_mask,
                 max_length=max_sequence_length,
                 do_sample=True,
                 top_k=k_in_top_k_sampling,
@@ -127,7 +128,7 @@ def main(args):
 
     df = pd.DataFrame({"texts": generated_samples, **scores})
     df.drop_duplicates(subset="texts")
-    df.write_csv(args.outfile)
+    df.to_csv(args.outfile)
 
 
 if __name__ == "__main__":
