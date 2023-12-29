@@ -16,11 +16,7 @@ def load_tokenizer(model_name: str):
     Load a tokenizer from HuggingFace, move onto a device.
     Set the padding side to left and the padding token to EOS.
     """
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    # For Autoregressive models, padding on the right would mean the model
-    # will receive padded tokens as context, which is not useful during generation
-    tokenizer.padding_side = "left"
+    tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
     tokenizer.pad_token = tokenizer.eos_token
 
     return tokenizer
@@ -33,7 +29,6 @@ def load_model(model_name: str, device: str):
     """
     model = AutoModelForCausalLM.from_pretrained(model_name, low_cpu_mem_usage=True)
     model = model.to(device)
-    model.config.pad_token_id = model.config.eos_token_id
     model.eval()
     return model
 
@@ -216,12 +211,12 @@ def main(args):
                 )
 
                 generated_samples.append(text)
-                scores["XL"].append(perplexity_gpt2_xl.cpu())
-                scores["SMALL"].append(perplexity_gpt2.cpu())
-                # scores["MEDIUM"].append(perplexity_gpt2_medium.cpu())
+                scores["XL"].append(perplexity_gpt2_xl)
+                scores["SMALL"].append(perplexity_gpt2)
+                # scores["MEDIUM"].append(perplexity_gpt2_medium))
                 scores["ZLIB"].append(zlib_entropy)
-                scores["LOWER"].append(perplexity_gpt2_xl_lower.cpu())
-                scores["WINDOW"].append(perplexity_gpt2_xl_window.cpu())
+                scores["LOWER"].append(perplexity_gpt2_xl_lower)
+                scores["WINDOW"].append(perplexity_gpt2_xl_window)
 
             pbar.update(args.batch_size)
 
