@@ -122,7 +122,9 @@ def main(args):
             )
             generated_texts = tokenizer.batch_decode(generated_sequences, skip_special_tokens=True)
 
-            append_results_on_batch(scores, generated_samples, generated_texts, model3b, model1b, tokenizer, device)
+            append_results_on_batch(
+                scores, generated_samples, generated_texts, model3b, model1b, tokenizer, device
+            )
             pbar.update(args.batch_size)
 
     df = pd.DataFrame({"texts": generated_samples, **scores})
@@ -140,6 +142,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--outfile",
         type=str,
+        required=True,
         help="Path to file to which the CSV of pandas dataset with results will be written",
     )
 
