@@ -31,7 +31,7 @@ pip install -r requirements.txt
 ```
 This saves the code chunks and the respective perprexities to a CSV file.
 
-5. Explore the saved results manually in the Jupyter notebook (see `TODO`).
+5. Explore the saved results manually in the Jupyter notebook (see `explore_generated_code_chunks.ipynb`).
     - To verify that the extracted code chunk was indeed present in the training data, we can search for it on GitHub using their API, since the original dataset is too large to search locally.
     - Obtain a GitHub API token, put it into the environment variable called `GITHUB_API_TOKEN`
 
