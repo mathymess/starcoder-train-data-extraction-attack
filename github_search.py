@@ -1,12 +1,14 @@
 import requests
+import urllib
 import os
 import re
 
 
 def get_search_url(query: str) -> str:
     query = query.strip()
-    query = re.sub("\s+", " ", query)  # Normalize whitespace characters
-    query = re.sub("\s+", " ", query)  # Remove duplicate spaces
+    # query = re.sub("\s+", " ", query)  # Normalize whitespace characters
+    # query = re.sub("\s+", " ", query)  # Remove duplicate spaces
+    query = urllib.parse.quote(query)
     url = f'https://api.github.com/search/code?q="{query}"'
     return url
 
@@ -50,10 +52,7 @@ if __name__ == "__main__":
     """
     code = """
         text = tokenizer.decode(generated_sequence, clean_up_tokenization_spaces=True)
-
-		total_sequence = (
-			args.prompt + text[len(tokenizer.decode(encoded_prompt[0], clean_up_tokenization_spaces=True)):]
-        # Some comment that would get me zero occurences
+        # Without this comment, about 300 matches. But this unique comment brings it down to 0.
     """.strip()
     print(get_search_url(code))
-    print(f"total count: {search_github(code)}")
+    print(f"total count: {get_gh_occurence_count(code)}")
