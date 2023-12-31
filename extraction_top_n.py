@@ -129,7 +129,7 @@ def main(args):
 
     df = pd.DataFrame({"texts": generated_samples, **scores})
     df.drop_duplicates(subset="texts")
-    df.to_csv(args.outfile)
+    df.to_csv(args.outfile, index=False)
 
 
 def parse_args() -> argparse.Namespace:
